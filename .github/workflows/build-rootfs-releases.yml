@@ -6,6 +6,28 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      build_target:
+        description: 'Distribution to build'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - 'all'
+          - 'Alpine-base'
+          - 'Alpine-Minimal'
+          - 'Arch-base-Kernel-5.10-and-up'
+          - 'Arch-Minimal-Kernel-5.10-and-up'
+          - 'AzureLinux-3.0-Minimal'
+          - 'Debian-13-base'
+          - 'Debian-13-Minimal'
+          - 'Debian-13-XFCE'
+          - 'Fedora-44-Minimal'
+          - 'OpenWrt-24.10-Minimal'
+          - 'Ubuntu-22.04-base'
+          - 'Ubuntu-22.04-Minimal'
+          - 'Ubuntu-24.04-base'
+          - 'Ubuntu-24.04-Minimal'
+          - 'Ubuntu-24.04-XFCE'
       update_json_only:
         description: 'Only update rootfs.json (skip build & release)'
         type: boolean
@@ -28,8 +50,14 @@ jobs:
       - name: Find Build Templates
         id: find-templates
         run: |
-          # Find all *.Dockerfile files, extract names, and format as JSON array
-          TEMPLATES=$(ls *.Dockerfile | sed 's/\.Dockerfile//' | jq -R -s -c 'split("\n")[:-1]')
+          BUILD_TARGET="${{ github.event.inputs.build_target || 'all' }}"
+          if [ "$BUILD_TARGET" = "all" ]; then
+            # Find all *.Dockerfile files, extract names, and format as JSON array
+            TEMPLATES=$(ls *.Dockerfile | sed 's/\.Dockerfile//' | jq -R -s -c 'split("\n")[:-1]')
+          else
+            # Single target selected
+            TEMPLATES=$(echo "$BUILD_TARGET" | jq -R -c '[.]')
+          fi
           echo "templates=$TEMPLATES" >> $GITHUB_OUTPUT
           echo "Detected templates: $TEMPLATES"
 
@@ -68,7 +96,7 @@ jobs:
           retention-days: 1
 
   build-nixos:
-    if: ${{ github.event.inputs.update_json_only != 'true' }}
+    if: ${{ github.event.inputs.update_json_only != 'true' && (github.event.inputs.build_target == 'all' || github.event_name != 'workflow_dispatch') }}
     needs: setup
     runs-on: ubuntu-24.04-arm
     strategy:
@@ -104,7 +132,7 @@ jobs:
           retention-days: 1
 
   release:
-    if: ${{ github.event.inputs.update_json_only != 'true' }}
+    if: ${{ github.event.inputs.update_json_only != 'true' && (github.event.inputs.build_target == 'all' || github.event_name != 'workflow_dispatch') }}
     needs: [setup, build, build-nixos]
     runs-on: ubuntu-latest
     permissions:
