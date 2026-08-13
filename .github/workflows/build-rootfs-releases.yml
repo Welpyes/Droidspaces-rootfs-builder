@@ -132,7 +132,7 @@ jobs:
           retention-days: 1
 
   release:
-    if: ${{ github.event.inputs.update_json_only != 'true' && (github.event.inputs.build_target == 'all' || github.event_name != 'workflow_dispatch') }}
+    if: ${{ github.event.inputs.update_json_only != 'true' }}
     needs: [setup, build, build-nixos]
     runs-on: ubuntu-latest
     permissions:

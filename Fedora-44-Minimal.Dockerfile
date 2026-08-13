@@ -65,15 +65,13 @@ RUN ln -sf /usr/sbin/iptables-legacy /usr/sbin/iptables && \
     ln -sf /usr/sbin/ip6tables-legacy-save /usr/sbin/ip6tables-save && \
     ln -sf /usr/sbin/ip6tables-legacy-restore /usr/sbin/ip6tables-restore
 
-# Configure locales, environment, SSH, and user setup
+# Configure locales, environment, and SSH
 RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf && \
     echo "LC_ALL=en_US.UTF-8" >> /etc/locale.conf && \
     # Configure SSH (Disable Root Login)
     mkdir -p /var/run/sshd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    # Create default user
-    useradd -m -s /bin/bash Gold && echo "Gold:1234" | chpasswd
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
 # Fix DHCP in the container
 RUN mkdir -p /etc/systemd/network && \
@@ -102,7 +100,6 @@ grep -q '^aid_net_admin:' /etc/group || echo 'aid_net_admin:x:3005:' >> /etc/gro
 
 # Root permissions for Android hardware access
 usermod -a -G aid_inet,aid_net_raw,input,video,tty root || true
-usermod -a -G aid_inet,aid_net_raw,input,video,tty,wheel Gold || true
 
 # Ensure future users created with useradd also get network groups
 if [ -f /etc/default/useradd ]; then
